@@ -1,16 +1,17 @@
 defmodule CausalCrdtTest do
   use ExUnit.Case, async: true
-  doctest DeltaCrdt
+#  doctest DeltaCrdt
 
   alias DeltaCrdt.AWLWWMap
+  alias DeltaCrdt.CausalCrdt
 
   describe "with context" do
     setup do
-      {:ok, c1} = DeltaCrdt.start_link(AWLWWMap, sync_interval: 50)
+      {:ok, c1} = DeltaCrdt.start_link(CausalCrdt, AWLWWMap, sync_interval: 50)
 
-      {:ok, c2} = DeltaCrdt.start_link(AWLWWMap, sync_interval: 50)
+      {:ok, c2} = DeltaCrdt.start_link(CausalCrdt, AWLWWMap, sync_interval: 50)
 
-      {:ok, c3} = DeltaCrdt.start_link(AWLWWMap, sync_interval: 50)
+      {:ok, c3} = DeltaCrdt.start_link(CausalCrdt, AWLWWMap, sync_interval: 50)
 
       DeltaCrdt.set_neighbours(c1, [c1, c2, c3])
       DeltaCrdt.set_neighbours(c2, [c1, c2, c3])
@@ -55,8 +56,8 @@ defmodule CausalCrdtTest do
   end
 
   test "synchronization is directional, diffs are sent TO neighbours" do
-    {:ok, c1} = DeltaCrdt.start_link(AWLWWMap, sync_interval: 50)
-    {:ok, c2} = DeltaCrdt.start_link(AWLWWMap, sync_interval: 50)
+    {:ok, c1} = DeltaCrdt.start_link(CausalCrdt, AWLWWMap, sync_interval: 50)
+    {:ok, c2} = DeltaCrdt.start_link(CausalCrdt, AWLWWMap, sync_interval: 50)
     DeltaCrdt.set_neighbours(c1, [c2])
     DeltaCrdt.mutate(c1, :add, ["Derek", "Kraan"])
     DeltaCrdt.mutate(c2, :add, ["Tonci", "Galic"])
@@ -66,8 +67,8 @@ defmodule CausalCrdtTest do
   end
 
   test "can sync to neighbours specified by name" do
-    {:ok, c1} = DeltaCrdt.start_link(AWLWWMap, sync_interval: 50, name: :neighbour_name_1)
-    {:ok, c2} = DeltaCrdt.start_link(AWLWWMap, sync_interval: 50, name: :neighbour_name_2)
+    {:ok, c1} = DeltaCrdt.start_link(CausalCrdt, AWLWWMap, sync_interval: 50, name: :neighbour_name_1)
+    {:ok, c2} = DeltaCrdt.start_link(CausalCrdt, AWLWWMap, sync_interval: 50, name: :neighbour_name_2)
     DeltaCrdt.set_neighbours(c1, [:neighbour_name_2])
     DeltaCrdt.set_neighbours(c2, [{:neighbour_name_1, node()}])
     DeltaCrdt.mutate(c1, :add, ["Derek", "Kraan"])
@@ -78,7 +79,7 @@ defmodule CausalCrdtTest do
   end
 
   test "storage backend can store and retrieve state" do
-    DeltaCrdt.start_link(AWLWWMap, storage_module: MemoryStorage, name: :storage_test)
+    DeltaCrdt.start_link(CausalCrdt, AWLWWMap, storage_module: MemoryStorage, name: :storage_test)
 
     DeltaCrdt.mutate(:storage_test, :add, ["Derek", "Kraan"])
     assert %{"Derek" => "Kraan"} = DeltaCrdt.read(:storage_test)
@@ -87,7 +88,7 @@ defmodule CausalCrdtTest do
   test "storage backend is used to rehydrate state after a crash" do
     task =
       Task.async(fn ->
-        DeltaCrdt.start_link(AWLWWMap, storage_module: MemoryStorage, name: :storage_test)
+        DeltaCrdt.start_link(CausalCrdt, AWLWWMap, storage_module: MemoryStorage, name: :storage_test)
         DeltaCrdt.mutate(:storage_test, :add, ["Derek", "Kraan"])
       end)
 
@@ -96,14 +97,14 @@ defmodule CausalCrdtTest do
     # time for the previous process to deregister itself
     Process.sleep(10)
 
-    {:ok, _} = DeltaCrdt.start_link(AWLWWMap, storage_module: MemoryStorage, name: :storage_test)
+    {:ok, _} = DeltaCrdt.start_link(CausalCrdt, AWLWWMap, storage_module: MemoryStorage, name: :storage_test)
 
     assert %{"Derek" => "Kraan"} = DeltaCrdt.read(:storage_test)
   end
 
   test "syncs after adding neighbour" do
-    {:ok, c1} = DeltaCrdt.start_link(AWLWWMap, sync_interval: 50)
-    {:ok, c2} = DeltaCrdt.start_link(AWLWWMap, sync_interval: 50)
+    {:ok, c1} = DeltaCrdt.start_link(CausalCrdt, AWLWWMap, sync_interval: 50)
+    {:ok, c2} = DeltaCrdt.start_link(CausalCrdt, AWLWWMap, sync_interval: 50)
     DeltaCrdt.mutate(c1, :add, ["CRDT1", "represent"])
     DeltaCrdt.mutate(c2, :add, ["CRDT2", "also here"])
     DeltaCrdt.set_neighbours(c1, [c2])
@@ -112,9 +113,9 @@ defmodule CausalCrdtTest do
   end
 
   test "can sync after network partition" do
-    {:ok, c1} = DeltaCrdt.start_link(AWLWWMap, sync_interval: 50)
+    {:ok, c1} = DeltaCrdt.start_link(CausalCrdt, AWLWWMap, sync_interval: 50)
 
-    {:ok, c2} = DeltaCrdt.start_link(AWLWWMap, sync_interval: 50)
+    {:ok, c2} = DeltaCrdt.start_link(CausalCrdt, AWLWWMap, sync_interval: 50)
 
     DeltaCrdt.set_neighbours(c1, [c2])
     DeltaCrdt.set_neighbours(c2, [c1])

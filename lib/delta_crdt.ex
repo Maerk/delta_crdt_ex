@@ -15,8 +15,8 @@ defmodule DeltaCrdt do
   Here's a simple example for illustration:
 
   ```
-  iex> {:ok, crdt1} = DeltaCrdt.start_link(DeltaCrdt.AWLWWMap, sync_interval: 3)
-  iex> {:ok, crdt2} = DeltaCrdt.start_link(DeltaCrdt.AWLWWMap, sync_interval: 3)
+  iex> {:ok, crdt1} = DeltaCrdt.start_link(DeltaCrdt.Causal,DeltaCrdt.AWLWWMap, sync_interval: 3)
+  iex> {:ok, crdt2} = DeltaCrdt.start_link(DeltaCrdt.Causal,DeltaCrdt.AWLWWMap, sync_interval: 3)
   iex> DeltaCrdt.set_neighbours(crdt1, [crdt2])
   iex> DeltaCrdt.set_neighbours(crdt2, [crdt1])
   iex> DeltaCrdt.read(crdt1)
@@ -25,6 +25,28 @@ defmodule DeltaCrdt do
   iex> Process.sleep(10) # need to wait for propagation for the doctest
   iex> DeltaCrdt.read(crdt2)
   %{"CRDT" => "is magic!"}
+
+  iex> {:ok, crdt3} = DeltaCrdt.start_link(DeltaCrdt.NamedCrdt,DeltaCrdt.PNCounter)
+  iex> {:ok, crdt4} = DeltaCrdt.start_link(DeltaCrdt.NamedCrdt,DeltaCrdt.PNCounter)
+  iex> DeltaCrdt.read(crdt4)
+  0
+  iex> DeltaCrdt.set_neighbours(crdt3, [crdt4])
+  iex> DeltaCrdt.mutate(crdt3, :inc, [5])
+  iex> DeltaCrdt.read(crdt4)
+  5
+  iex> DeltaCrdt.mutate(crdt3, :dec, [3])
+  iex> DeltaCrdt.read(crdt4)
+  2
+
+  iex> {:ok, crdt5} = DeltaCrdt.start_link(DeltaCrdt.NamedCrdt,DeltaCrdt.GCounter)
+  iex> {:ok, crdt6} = DeltaCrdt.start_link(DeltaCrdt.NamedCrdt,DeltaCrdt.GCounter)
+  iex> DeltaCrdt.read(crdt6)
+  0
+  iex> DeltaCrdt.set_neighbours(crdt5, [crdt6])
+  iex> DeltaCrdt.mutate(crdt5, :inc, [5])
+  iex> DeltaCrdt.read(crdt6)
+  5
+
   ```
   """
 
@@ -48,16 +70,17 @@ defmodule DeltaCrdt do
   - `:sync_interval` - the delta CRDT will attempt to sync its local changes with its neighbours at this interval. Default is 50.
   """
   @spec start_link(
+          crdt_type :: module(),
           crdt_module :: module(),
           opts :: crdt_options()
         ) :: GenServer.on_start()
-  def start_link(crdt_module, opts \\ []) do
+  def start_link(crdt_type, crdt_module, opts \\ []) do
     init_arg =
       Keyword.put(opts, :crdt_module, crdt_module)
       |> Keyword.put_new(:sync_interval, @default_sync_interval)
       |> Keyword.put_new(:max_sync_size, @default_max_sync_size)
 
-    GenServer.start_link(DeltaCrdt.CausalCrdt, init_arg, Keyword.take(opts, [:name]))
+    GenServer.start_link(crdt_type, init_arg, Keyword.take(opts, [:name]))
   end
 
   @doc """

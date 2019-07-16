@@ -3,12 +3,14 @@ defmodule DeltaSubscriberTest do
   use ExUnitProperties
 
   alias DeltaCrdt.AWLWWMap
+  alias DeltaCrdt.CausalCrdt
 
   test "receives deltas updates" do
     test_pid = self()
 
     {:ok, c1} =
-      DeltaCrdt.start_link(AWLWWMap,
+      DeltaCrdt.start_link(CausalCrdt,
+        AWLWWMap,
         sync_interval: 50,
         on_diffs: fn diffs -> send(test_pid, {:diff, diffs}) end
       )
@@ -25,14 +27,16 @@ defmodule DeltaSubscriberTest do
 
   test "updates are bundled" do
     {:ok, c1} =
-      DeltaCrdt.start_link(AWLWWMap,
+      DeltaCrdt.start_link(CausalCrdt,
+        AWLWWMap,
         sync_interval: 50
       )
 
     test_pid = self()
 
     {:ok, c2} =
-      DeltaCrdt.start_link(AWLWWMap,
+      DeltaCrdt.start_link(CausalCrdt,
+        AWLWWMap,
         sync_interval: 50,
         on_diffs: fn diffs ->
           send(test_pid, {:diff, diffs})
@@ -70,7 +74,8 @@ defmodule DeltaSubscriberTest do
       test_pid = self()
 
       {:ok, c1} =
-        DeltaCrdt.start_link(AWLWWMap,
+        DeltaCrdt.start_link(CausalCrdt,
+          AWLWWMap,
           sync_interval: 50,
           on_diffs: fn diffs -> send(test_pid, {:diff, diffs}) end
         )
