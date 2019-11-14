@@ -60,7 +60,7 @@ defmodule DeltaCrdt.NamedCrdt do
       end
 
     initial_state = %__MODULE__{
-      node_id: :crypto.rand_uniform(0,18446744073709551616),
+      node_id: :rand.uniform(18446744073709551616),
       name: Keyword.get(opts, :name),
       on_diffs: Keyword.get(opts, :on_diffs, fn _diffs -> nil end),
       storage_module: Keyword.get(opts, :storage_module),
