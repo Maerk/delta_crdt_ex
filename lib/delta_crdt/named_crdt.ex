@@ -60,15 +60,15 @@ defmodule DeltaCrdt.NamedCrdt do
       end
 
     initial_state = %__MODULE__{
-      node_id: :rand.uniform(1_000_000_000),
+      node_id: :crypto.rand_uniform(0,18446744073709551616),
       name: Keyword.get(opts, :name),
       on_diffs: Keyword.get(opts, :on_diffs, fn _diffs -> nil end),
       storage_module: Keyword.get(opts, :storage_module),
       sync_interval: Keyword.get(opts, :sync_interval),
       max_sync_size: max_sync_size,
       crdt_module: crdt_module,
-      crdt_state: crdt_module.new(self()),
-      crdt_deltas: crdt_module.new(self())
+      crdt_state: crdt_module.new(),
+      crdt_deltas: crdt_module.new()
     }
 
     strip_continue({:ok, initial_state, {:continue, :read_storage}})
@@ -203,7 +203,7 @@ defmodule DeltaCrdt.NamedCrdt do
       end)
 
     Map.put(state, :outstanding_syncs, new_outstanding_syncs)
-    |> Map.put(:crdt_deltas, state.crdt_module.new(self()))
+    |> Map.put(:crdt_deltas, state.crdt_module.new())
   end
 
   defp monitor_neighbours(state) do
@@ -221,7 +221,7 @@ defmodule DeltaCrdt.NamedCrdt do
   end
 
   defp handle_operation({function, [value]}, state) when is_integer(value) do
-    delta = apply(state.crdt_module, function, [value, state.crdt_state])
+    delta = apply(state.crdt_module, function, [value, state.node_id, state.crdt_state])
     update_state_with_delta(state, delta)
   end
 

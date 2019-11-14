@@ -3,14 +3,14 @@ defmodule DeltaCrdt.PNCounter do
             n: DeltaCrdt.GCounter
 
   @doc false
-  def new(id), do: %__MODULE__{p: DeltaCrdt.GCounter.new(id), n: DeltaCrdt.GCounter.new(id)}
+  def new(), do: %__MODULE__{p: DeltaCrdt.GCounter.new(), n: DeltaCrdt.GCounter.new()}
 
-  def inc(value \\ 1, state) do
-    %{__MODULE__.new(state.p.id) | p: DeltaCrdt.GCounter.inc(value, state.p)}
+  def inc(value \\ 1, i, state) do
+    %{__MODULE__.new() | p: DeltaCrdt.GCounter.inc(value, i, state.p)}
   end
 
-  def dec(value \\ 1, state) do
-    %{__MODULE__.new(state.n.id) | n: DeltaCrdt.GCounter.inc(value, state.n)}
+  def dec(value \\ 1, i, state) do
+    %{__MODULE__.new() | n: DeltaCrdt.GCounter.inc(value, i, state.n)}
   end
 
   def join(delta1, delta2) do

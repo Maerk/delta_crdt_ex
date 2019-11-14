@@ -16,9 +16,9 @@ defmodule DeltaNamedTest do
       )
 
     :ok = DeltaCrdt.mutate(c1, :inc, [5])
-    assert_received({:diff, [{:inc, c1, 5}]})
+    assert_received({:diff, [{:inc, _node, 5}]})
     :ok = DeltaCrdt.mutate(c1, :dec, [6])
-    assert_received({:diff, [{:dec, c1, 6}]})
+    assert_received({:diff, [{:dec, _node, 6}]})
 
     {:ok, c2} =
       DeltaCrdt.start_link(NamedCrdt,
